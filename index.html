@@ -99,6 +99,17 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 5px;border
 #muteBtn{position:fixed;right:14px;top:88px;z-index:11;font-size:12px;color:rgba(238,242,247,0.85);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;pointer-events:auto;font-family:inherit}
 #muteBtn:hover{background:rgba(255,255,255,0.1)}
 #muteBtn:focus-visible{outline:2px solid #7de89a;outline-offset:2px}
+#crosshair{position:fixed;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);pointer-events:none;display:none;z-index:9}
+#crosshair::before,#crosshair::after{content:"";position:absolute;background:rgba(255,255,255,0.92);box-shadow:0 0 3px rgba(0,0,0,0.85)}
+#crosshair::before{left:10px;top:0;width:2px;height:22px}
+#crosshair::after{left:0;top:10px;width:22px;height:2px}
+#hotbar{position:fixed;right:16px;bottom:16px;z-index:10;display:none;gap:8px;pointer-events:none}
+#hotbar .slot{width:54px;height:54px;background:rgba(10,14,20,0.78);border:2px solid rgba(255,255,255,0.25);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+#hotbar .slot.active{border-color:#7de89a;box-shadow:0 0 10px rgba(125,232,154,0.4)}
+#hotbar .s-name{font-size:13px;color:#fff}
+#hotbar .s-key{font-size:10px;color:rgba(255,255,255,0.55)}
+#hotbar.swinging{animation:hotSwing .3s ease-out}
+@keyframes hotSwing{0%{transform:translateX(0) rotate(0)}30%{transform:translateX(16px) rotate(-20deg)}100%{transform:translateX(0) rotate(0)}}
 
 @media (max-width:860px){
   .panel{width:185px}
@@ -126,10 +137,15 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 5px;border
     <div class="p-meta"><span>生命 <b id="hpBlueTxt">100</b></span><span>击杀 <b id="scoreBlue">0</b>/5</span><span>方块 <b id="blocksBlue">40</b></span><span class="rtt" id="rttBlue"></span></div>
   </div>
   <div id="killfeed"></div>
+  <div id="crosshair"></div>
+  <div id="hotbar">
+    <div class="slot active" data-slot="1"><span class="s-name">剑</span><span class="s-key">1</span></div>
+    <div class="slot" data-slot="2"><span class="s-name">方块</span><span class="s-key">2</span></div>
+  </div>
   <div id="controlsBar">
-    <div class="team red"><b>红方 P1</b><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动</span><span><kbd>空格</kbd>跳 · <kbd>F</kbd>方块 · <kbd>G</kbd>剑 · <kbd>H</kbd>弓</span></div>
+    <div class="team red"><b>红方 P1</b><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动</span><span><kbd>空格</kbd>跳 · <kbd>F</kbd>方块 · <kbd>G</kbd>剑</span></div>
     <div class="sep"></div>
-    <div class="team blue"><b>蓝方 P2</b><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> 移动</span><span><kbd>右Shift</kbd>跳 · <kbd>L</kbd>方块 · <kbd>K</kbd>剑 · <kbd>J</kbd>弓</span></div>
+    <div class="team blue"><b>蓝方 P2</b><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> 移动</span><span><kbd>右Shift</kbd>跳 · <kbd>L</kbd>方块 · <kbd>K</kbd>剑</span></div>
   </div>
 </div>
 
@@ -156,10 +172,10 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 5px;border
       </div>
     </div>
     <div class="rule">
-      <div class="box red"><b>红方 P1</b>移动 WASD · 跳 空格<br>方块 F · 剑 G · 弓 H</div>
-      <div class="box blue"><b>蓝方 P2</b>移动 方向键 · 跳 右Shift<br>方块 L · 剑 K · 弓 J</div>
+      <div class="box red"><b>红方 P1</b>移动 WASD · 跳 空格<br>方块 F · 剑 G</div>
+      <div class="box blue"><b>蓝方 P2</b>移动 方向键 · 跳 右Shift<br>方块 L · 剑 K</div>
     </div>
-    <div class="tip">本地对战同屏双人；联机对战需两台设备联网 · 视角拖拽 / 滚轮缩放 / M 静音</div>
+    <div class="tip">本地对战同屏双人；联机对战为第一人称（点击画面锁定鼠标）· 数字键 1 剑 / 2 方块 · M 静音</div>
   </div>
 </div>
 
@@ -190,11 +206,10 @@ const CFG = {
   gravity: 26, jump: 8.8, move: 5.2, accel: 30, friction: 12, airCtrl: 0.65, maxFall: 30,
   half: 0.3, height: 1.8,
   swordDmg: 16, swordRange: 2.5, swordCD: 0.55, swordKnock: 8.5,
-  bowDmg: 9, bowSpeed: 24, bowCD: 0.7, bowKnock: 5.2, bowGravity: 9, bowLife: 5,
   hpMax: 100, winScore: 5, respawnTime: 1.6, invulnTime: 1.5,
   maxBlocks: 40, placeCD: 0.13, voidY: -6,
   arena: { xmin: -19, xmax: 18, zmin: -4, zmax: 4, ymin: 0, ymax: 6 },
-  netRate: 50, pingRate: 2000
+  netRate: 33, pingRate: 2000
 };
 const BRIDGE = { xmin: -16, xmax: 15, y: 0, z: 0 };
 const GAPS = new Set(['-8,0,0', '-3,0,0', '-2,0,0', '6,0,0']);
@@ -202,18 +217,19 @@ const GAPS = new Set(['-8,0,0', '-3,0,0', '-2,0,0', '6,0,0']);
 /* ============ 全局状态 ============ */
 let scene, camera, renderer;
 const players = [];
-const arrows = [];
 const particles = [];
 const damageTexts = [];
 let state = 'menu'; // menu | playing | over
 const keysDown = new Set();
 let netMode = 'local'; // local | host | guest
 let net = null;        // 联机会话 {mode,room,peer,conn,...}
-let arrowMap = null;   // 访客端视觉箭矢 {id->{mesh,target,vel}}
 let netRtt = 0;        // 本端测得的往返延迟
+let selectedSlot = 1;  // 联机第一人称热键：1 剑 / 2 方块
+let isFirstPerson = false; // 联机对局中为 true（第一人称 + 准星 + 热键栏）
 
-const KEYS_RED  = { up:'KeyW', down:'KeyS', left:'KeyA', right:'KeyD', jump:'Space',  place:'KeyF', sword:'KeyG', bow:'KeyH' };
-const KEYS_BLUE = { up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight', jump:'ShiftRight', place:'KeyL', sword:'KeyK', bow:'KeyJ' };
+const KEYS_RED  = { up:'KeyW', down:'KeyS', left:'KeyA', right:'KeyD', jump:'Space',  place:'KeyF', sword:'KeyG' };
+const KEYS_BLUE = { up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight', jump:'ShiftRight', place:'KeyL', sword:'KeyK' };
+const FP_KEYS = { up:'KeyW', down:'KeyS', left:'KeyA', right:'KeyD', jump:'Space' }; // 联机第一人称统一键位
 
 /* ============ 场景 / 渲染器 ============ */
 function initThree(){
@@ -371,8 +387,6 @@ const SFX = {
       case 'place': this.tone(150, 120, 0.08, 'square', 0.26); break;
       case 'swing': this.whoosh(0.16, 0.28); break;
       case 'hit': this.tone(190, 90, 0.12, 'square', 0.3); break;
-      case 'shoot': this.tone(820, 240, 0.13, 'sine', 0.2); break;
-      case 'arrowHit': this.tone(140, 60, 0.1, 'triangle', 0.28); break;
       case 'death': this.tone(330, 70, 0.5, 'sawtooth', 0.26); break;
       case 'start': this.tone(440, 660, 0.12, 'sine', 0.2); break;
       case 'win':
@@ -384,9 +398,22 @@ const SFX = {
   }
 };
 
-/* ============ 相机（拖拽环绕 + 滚轮缩放） ============ */
+/* ============ 相机（联机第一人称 / 本地双人环绕） ============ */
 const cam = { az: 0, elev: 0.9, radius: 34, tx: 0, ty: 1.4, tz: 0, pinchD: null };
 function updateCamera(){
+  if (isFirstPerson && state === 'playing'){
+    const p = players.find(x => x.isLocal);
+    if (p){
+      camera.position.set(p.pos.x, p.pos.y + 1.62, p.pos.z);
+      camera.rotation.order = 'YXZ';
+      // 注意：Three.js 相机默认视线为 -Z；这里 +PI 使视线与玩家 facing（前方）一致
+      camera.rotation.y = p.yaw + Math.PI;
+      camera.rotation.x = p.pitch;
+      if (p.group) p.group.visible = false;      // 第一人称隐藏自己的模型，避免遮挡视线
+      if (p.hpSprite) p.hpSprite.visible = false;
+      return;
+    }
+  }
   const e = cam.elev, r = cam.radius;
   camera.position.set(
     cam.tx + r * Math.sin(e) * Math.sin(cam.az),
@@ -398,6 +425,13 @@ function updateCamera(){
 const canvasEl = document.getElementById('gameCanvas');
 const pointers = new Map();
 canvasEl.addEventListener('pointerdown', e => {
+  if (isFirstPerson){
+    if (state === 'playing'){
+      if (canvasEl.requestPointerLock) canvasEl.requestPointerLock();
+      if (e.button === 0) useSelectedSlot();
+    }
+    return;
+  }
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 2){
     const p = [...pointers.values()];
@@ -419,11 +453,50 @@ window.addEventListener('pointermove', e => {
   }
 });
 window.addEventListener('pointerup', e => {
+  if (isFirstPerson){
+    const p = players.find(x => x.isLocal);
+    if (p) p.input.place = false;
+    return;
+  }
   pointers.delete(e.pointerId);
   if (pointers.size < 2) cam.pinchD = null;
 });
+// 第一人称：指针锁定后的视角旋转
+document.addEventListener('mousemove', e => {
+  if (!isFirstPerson || state !== 'playing') return;
+  if (document.pointerLockElement !== canvasEl) return;
+  const p = players.find(x => x.isLocal);
+  if (!p || !p.alive) return;
+  p.yaw -= e.movementX * 0.0028;
+  p.pitch = Math.max(-1.35, Math.min(1.35, p.pitch - e.movementY * 0.0028));
+});
+function updateHotbar(){
+  document.querySelectorAll('#hotbar .slot').forEach(s => {
+    s.classList.toggle('active', Number(s.dataset.slot) === selectedSlot);
+  });
+}
+function useSelectedSlot(){
+  if (state !== 'playing') return;
+  const p = players.find(x => x.isLocal);
+  if (!p || !p.alive) return;
+  if (selectedSlot === 1){
+    if (netMode === 'guest') net.pendingInput.sword = true;
+    swordAttack(p);
+    const hb = document.getElementById('hotbar');
+    hb.classList.remove('swinging');
+    void hb.offsetWidth;
+    hb.classList.add('swinging');
+  } else {
+    p.input.place = true;
+  }
+}
 window.addEventListener('wheel', e => {
   e.preventDefault();
+  if (isFirstPerson){
+    selectedSlot = e.deltaY > 0 ? (selectedSlot === 2 ? 1 : 2) : (selectedSlot === 1 ? 2 : 1);
+    updateHotbar();
+    return;
+  }
   cam.radius = Math.min(48, Math.max(16, cam.radius * (e.deltaY > 0 ? 1.08 : 0.92)));
 }, { passive: false });
 
@@ -562,14 +635,6 @@ function buildRig(team){
   const armLM = new THREE.Mesh(armGeo, mats.arms);
   armLM.position.y = -0.3;
   armL.add(armLM);
-  const bow = new THREE.Group();
-  const bowArc = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.035, 6, 14, Math.PI), new THREE.MeshLambertMaterial({ color: 0x6b4a2b }));
-  bowArc.rotation.y = Math.PI / 2;
-  bow.add(bowArc);
-  const bowStr = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.6), new THREE.MeshLambertMaterial({ color: 0xf2f2f2 }));
-  bow.add(bowStr);
-  bow.position.set(-0.02, -0.5, 0.12);
-  armL.add(bow);
 
   const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), skin);
   head.position.y = 1.49;
@@ -609,9 +674,12 @@ class Player {
     this.alive = true;
     this.respawnT = 0;
     this.invulnT = 0;
-    this.cd = { sword: 0, bow: 0, place: 0 };
-    this.anim = { walk: 0, swing: 0, draw: 0 };
+    this.cd = { sword: 0, place: 0 };
+    this.anim = { walk: 0, swing: 0 };
     this.input = { x: 0, z: 0, jump: false, place: false };
+    this._snapTarget = null; // 访客本体：主机快照的插值目标
+    this.yaw = Math.atan2(this.facing.x, this.facing.z); // 第一人称视角：绕 Y
+    this.pitch = 0;                                      // 第一人称视角：俯仰
     this.lastHit = null;
     this.lastHitT = 0;
     const rig = buildRig(team);
@@ -626,6 +694,38 @@ class Player {
   }
   other(){ return players[0] === this ? players[1] : players[0]; }
   update(dt){
+    // 访客（蓝方）本体：不跑本地物理，位置完全由主机快照驱动（插值）。
+    // 本地只做按键读取/上报与挥剑视觉反馈——避免本地预测与主机权威冲突导致"走几步被拉回原地"
+    if (netMode === 'guest' && this.team === 'blue'){
+      readInput(this);
+      if (isFirstPerson){
+        this.facing.set(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+        const fx = this.facing.x, fz = this.facing.z;
+        const rx = fz, rz = -fx; // 右方向
+        const ix = this.input.x, iz = this.input.z;
+        this.input.x = fx * ix + rx * iz;
+        this.input.z = fz * ix + rz * iz;
+      }
+      this.cd.sword = Math.max(0, this.cd.sword - dt);
+      this.cd.place = Math.max(0, this.cd.place - dt);
+      if (this.alive && this._snapTarget){
+        const k = Math.min(1, dt * 14);
+        this.pos.lerp(this._snapTarget, k);
+        if (this.pos.distanceTo(this._snapTarget) < 0.02) this.pos.copy(this._snapTarget);
+      }
+      this.anim.swing = Math.max(0, this.anim.swing - dt);
+      const sp = this.anim.swing > 0 ? 1 - this.anim.swing / 0.3 : 0;
+      this.armR.rotation.x = 0.05 - 1.4 * Math.sin(sp * Math.PI);
+      this.group.visible = this.alive && (this.invulnT > 0 ? (Math.floor(this.invulnT * 12) % 2 === 0) : true);
+      this.hpSprite.visible = this.alive;
+      if (this.alive){
+        this.group.position.copy(this.pos);
+        this.group.rotation.y = Math.atan2(this.facing.x, this.facing.z);
+        this.legL.rotation.x = Math.sin(this.anim.walk) * 0.7;
+        this.legR.rotation.x = -Math.sin(this.anim.walk) * 0.7;
+      }
+      return;
+    }
     if (!this.alive){
       if (netMode === 'guest') return; // 复活由主机快照驱动
       this.respawnT -= dt;
@@ -635,10 +735,20 @@ class Player {
     this.invulnT = Math.max(0, this.invulnT - dt);
     this.lastHitT = Math.max(0, this.lastHitT - dt);
     this.cd.sword = Math.max(0, this.cd.sword - dt);
-    this.cd.bow = Math.max(0, this.cd.bow - dt);
     this.cd.place = Math.max(0, this.cd.place - dt);
 
     readInput(this);
+    // 第一人称（联机）：朝向由视角 yaw 决定——本地玩家与主机端模拟的访客都如此
+    const fpCtrl = isFirstPerson && (this.isLocal || (netMode === 'host' && this.team === 'blue'));
+    if (fpCtrl) this.facing.set(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+    if (this.isLocal && isFirstPerson){
+      // 移动方向相对视线
+      const fx = this.facing.x, fz = this.facing.z;
+      const rx = fz, rz = -fx; // 右方向
+      const ix = this.input.x, iz = this.input.z;
+      const wx = fx * ix + rx * iz, wz = fz * ix + rz * iz;
+      this.input.x = wx; this.input.z = wz;
+    }
     const len = Math.hypot(this.input.x, this.input.z);
     if (len > 0){
       const nx = this.input.x / len, nz = this.input.z / len;
@@ -647,7 +757,7 @@ class Player {
       this.vel.z += nz * a * dt;
       const h = Math.hypot(this.vel.x, this.vel.z);
       if (h > CFG.move){ const s = CFG.move / h; this.vel.x *= s; this.vel.z *= s; }
-      this.facing.set(nx, 0, nz);
+      if (!fpCtrl) this.facing.set(nx, 0, nz);
       this.anim.walk += dt * (4 + (h / CFG.move) * 8);
     } else {
       const fr = (this.onGround ? CFG.friction : CFG.friction * 0.45) * dt;
@@ -659,7 +769,7 @@ class Player {
       this.vel.y = CFG.jump;
       this.onGround = false;
       SFX.play('jump');
-      if (netMode === 'host' && this.team === 'red') hostEvt({ k: 'sound', name: 'jump' });
+      if (netMode === 'host' && net) hostEvt({ k: 'sound', name: 'jump' }); // 双方跳跃都广播，访客能听到自己的跳跃声
     }
     this.input.jump = false;
     if (this.input.place) tryPlace(this);
@@ -682,11 +792,8 @@ class Player {
     this.legL.rotation.x = Math.sin(this.anim.walk) * 0.7;
     this.legR.rotation.x = -Math.sin(this.anim.walk) * 0.7;
     this.anim.swing = Math.max(0, this.anim.swing - dt);
-    this.anim.draw = Math.max(0, this.anim.draw - dt);
     const swingProg = this.anim.swing > 0 ? 1 - this.anim.swing / 0.3 : 0;
     this.armR.rotation.x = 0.05 - 1.4 * Math.sin(swingProg * Math.PI);
-    const drawProg = this.anim.draw > 0 ? 1 - this.anim.draw / 0.25 : 0;
-    this.armL.rotation.x = -0.05 - 0.6 * Math.sin(drawProg * Math.PI);
     this.group.visible = this.invulnT > 0 ? (Math.floor(this.invulnT * 12) % 2 === 0) : true;
   }
   die(attacker, src){
@@ -730,6 +837,8 @@ class Player {
   }
   forceRespawn(pos){
     this.pos.copy(pos);
+    if (this._snapTarget) this._snapTarget.copy(pos);
+    else this._snapTarget = pos.clone();
     this.vel.set(0, 0, 0);
     this.hp = CFG.hpMax;
     this.alive = true;
@@ -752,7 +861,7 @@ class RemotePlayer {
     this.blocks = CFG.maxBlocks;
     this.alive = true;
     this.invulnT = 0;
-    this.anim = { walk: 0, swing: 0, draw: 0 };
+    this.anim = { walk: 0, swing: 0 };
     const rig = buildRig(team);
     this.rig = rig;
     this.group = rig.group;
@@ -777,7 +886,6 @@ class RemotePlayer {
     this._faceT = { x: s.face[0], z: s.face[1] };
     this.anim.walk = s.anim[0];
     this.anim.swing = s.anim[1];
-    this.anim.draw = s.anim[2];
     if (this.hp !== this._lastHp){ this._lastHp = this.hp; drawHpBar(this); }
   }
   update(dt){
@@ -793,8 +901,6 @@ class RemotePlayer {
       this.legR.rotation.x = -Math.sin(this.anim.walk) * 0.7;
       const sp = this.anim.swing > 0 ? 1 - this.anim.swing / 0.3 : 0;
       this.armR.rotation.x = 0.05 - 1.4 * Math.sin(sp * Math.PI);
-      const dp = this.anim.draw > 0 ? 1 - this.anim.draw / 0.25 : 0;
-      this.armL.rotation.x = -0.05 - 0.6 * Math.sin(dp * Math.PI);
       this.group.visible = this.invulnT > 0 ? (Math.floor(this.invulnT * 12) % 2 === 0) : true;
       this.hpSprite.visible = true;
     } else {
@@ -851,9 +957,10 @@ function readInput(p){
     p.input.x = gi.ix;
     p.input.z = gi.iz;
     p.input.place = gi.place;
+    p.yaw = gi.yaw || 0;
+    p.pitch = gi.pitch || 0;
     if (gi.jump){ p.input.jump = true; gi.jump = false; }
     if (gi.sword){ swordAttack(p); gi.sword = false; }
-    if (gi.bow){ bowShoot(p); gi.bow = false; }
     return;
   }
   const k = p.keys, d = keysDown;
@@ -862,7 +969,8 @@ function readInput(p){
   if (d.has(k.down)) b = 1;
   if (d.has(k.left)) l = 1;
   if (d.has(k.right)) r = 1;
-  if (p.team === 'red'){ p.input.x = f - b; p.input.z = r - l; }
+  if (isFirstPerson){ p.input.x = f - b; p.input.z = r - l; }
+  else if (p.team === 'red'){ p.input.x = f - b; p.input.z = r - l; }
   else { p.input.x = b - f; p.input.z = l - r; }
 }
 function playerOverlapsCell(p, x, y, z){
@@ -871,13 +979,31 @@ function playerOverlapsCell(p, x, y, z){
          (z < p.pos.z + CFG.half && z + 1 > p.pos.z - CFG.half);
 }
 
-/* ============ 战斗：剑 / 弓 / 放方块（主机裁决） ============ */
+/* ============ 战斗：剑 / 放方块（主机裁决） ============ */
 function hostEvt(e){
   if (netMode === 'host' && net) net.evtQueue.push(e);
 }
 function tryPlace(p){
   if (netMode === 'guest') return; // 由主机裁决，本地只发送输入
   if (!p.alive || p.cd.place > 0 || p.blocks <= 0) return;
+  // 第一人称：方块放在准心所指处（视线射线）；本地双人：放在面前固定距离
+  const cell = isFirstPerson ? raycastPlace(p) : candsPlace(p);
+  if (!cell) return;
+  const x = cell[0], y = cell[1], z = cell[2];
+  if (x < CFG.arena.xmin || x > CFG.arena.xmax || z < CFG.arena.zmin || z > CFG.arena.zmax || y < CFG.arena.ymin || y > CFG.arena.ymax) return;
+  if (solidAt(x, y, z)) return;
+  if (playerOverlapsCell(p, x, y, z)) return;
+  const foe = p.other();
+  if (foe.alive && playerOverlapsCell(foe, x, y, z)) return;
+  setBlock(x, y, z, p.team, true);
+  p.blocks--;
+  p.cd.place = CFG.placeCD;
+  SFX.play('place');
+  hostEvt({ k: 'block', x, y, z, type: p.team });
+  hostEvt({ k: 'sound', name: 'place' });
+}
+// 本地双人：玩家面前 1.4 / 2.4 格（脚部高度）的候选位
+function candsPlace(p){
   const fx = p.facing.x, fz = p.facing.z;
   const footY = Math.floor(p.pos.y - 0.02);
   const cands = [
@@ -892,14 +1018,32 @@ function tryPlace(p){
     if (playerOverlapsCell(p, x, y, z)) continue;
     const foe = p.other();
     if (foe.alive && playerOverlapsCell(foe, x, y, z)) continue;
-    setBlock(x, y, z, p.team, true);
-    p.blocks--;
-    p.cd.place = CFG.placeCD;
-    SFX.play('place');
-    hostEvt({ k: 'block', x, y, z, type: p.team });
-    hostEvt({ k: 'sound', name: 'place' });
-    return;
+    return [x, y, z];
   }
+  return null;
+}
+// 第一人称：从眼睛沿视线方向步进，命中方块后放在命中面外侧（准心所指处）
+function raycastPlace(p){
+  const eye = p.pos.y + 1.62;
+  const cp = Math.cos(p.pitch), sp = Math.sin(p.pitch);
+  const dx = Math.sin(p.yaw) * cp, dy = sp, dz = Math.cos(p.yaw) * cp;
+  let prev = null;
+  for (let d = 0.4; d <= 6; d += 0.06){
+    const cx = Math.floor(p.pos.x + dx * d);
+    const cy = Math.floor(eye + dy * d);
+    const cz = Math.floor(p.pos.z + dz * d);
+    if (solidAt(cx, cy, cz)){
+      if (!prev) return null;
+      const ax = Math.abs(dx), ay = Math.abs(dy), az = Math.abs(dz);
+      let px = prev[0], py = prev[1], pz = prev[2];
+      if (ax >= ay && ax >= az) px = cx - (dx > 0 ? 1 : -1);
+      else if (az >= ax && az >= ay) pz = cz - (dz > 0 ? 1 : -1);
+      else py = cy - (dy > 0 ? 1 : -1);
+      return [px, py, pz];
+    }
+    prev = [cx, cy, cz];
+  }
+  return null;
 }
 function swordAttack(p){
   if (!p.alive || p.cd.sword > 0) return;
@@ -916,18 +1060,6 @@ function swordAttack(p){
   const cosA = (p.facing.x * dx + p.facing.z * dz) / distH;
   if (cosA < Math.cos(70 * Math.PI / 180)) return;
   damagePlayer(foe, CFG.swordDmg, p, CFG.swordKnock, '剑');
-}
-let nextArrowId = 1;
-function bowShoot(p){
-  if (!p.alive || p.cd.bow > 0) return;
-  p.cd.bow = CFG.bowCD;
-  p.anim.draw = 0.25;
-  if (netMode === 'guest'){ SFX.play('shoot'); return; } // 预测表现，箭矢由主机生成
-  SFX.play('shoot');
-  if (netMode === 'host' && p.team === 'red') hostEvt({ k: 'sound', name: 'shoot' });
-  const start = new THREE.Vector3(p.pos.x + p.facing.x * 0.7, p.pos.y + 1.5, p.pos.z + p.facing.z * 0.7);
-  const vel = new THREE.Vector3(p.facing.x * CFG.bowSpeed, 4, p.facing.z * CFG.bowSpeed);
-  arrows.push(new Arrow(p.team, start, vel, p, nextArrowId++));
 }
 function damagePlayer(v, dmg, attacker, knock, src){
   if (!v.alive || v.invulnT > 0) return;
@@ -977,66 +1109,6 @@ function checkWin(p){
   }
 }
 
-/* ============ 箭矢（主机模拟） ============ */
-class Arrow {
-  constructor(team, pos, vel, owner, id){
-    this.team = team;
-    this.owner = owner;
-    this.id = id;
-    this.pos = pos.clone();
-    this.vel = vel.clone();
-    this.life = CFG.bowLife;
-    this.alive = true;
-    const mat = new THREE.MeshLambertMaterial({ color: team === 'red' ? 0xe0353a : 0x2f74e0 });
-    this.mesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.7), mat);
-    this.mesh.castShadow = false;
-    scene.add(this.mesh);
-    this.refresh();
-  }
-  update(dt){
-    this.life -= dt;
-    if (this.life <= 0){ this.remove(); return; }
-    this.vel.y -= CFG.bowGravity * dt;
-    this.pos.addScaledVector(this.vel, dt);
-    const bx = Math.floor(this.pos.x), by = Math.floor(this.pos.y), bz = Math.floor(this.pos.z);
-    if (solidAt(bx, by, bz)){
-      spawnParticles(this.pos, 0xffffff, 4, 3);
-      SFX.play('arrowHit');
-      hostEvt({ k: 'sound', name: 'arrowHit' });
-      this.remove();
-      return;
-    }
-    for (let i = 0; i < players.length; i++){
-      const pl = players[i];
-      if (pl === this.owner || !pl.alive || pl.invulnT > 0) continue;
-      const e = 0.25;
-      if (Math.abs(this.pos.x - pl.pos.x) < CFG.half + e &&
-          this.pos.y > pl.pos.y - 0.15 && this.pos.y < pl.pos.y + CFG.height + 0.15 &&
-          Math.abs(this.pos.z - pl.pos.z) < CFG.half + e){
-        damagePlayer(pl, CFG.bowDmg, this.owner, CFG.bowKnock, '弓');
-        SFX.play('arrowHit');
-        hostEvt({ k: 'sound', name: 'arrowHit' });
-        this.remove();
-        return;
-      }
-    }
-    this.refresh();
-  }
-  refresh(){
-    const dir = this.vel.clone().normalize();
-    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
-    this.mesh.quaternion.copy(q);
-    this.mesh.position.copy(this.pos);
-  }
-  remove(){
-    if (!this.alive) return;
-    this.alive = false;
-    scene.remove(this.mesh);
-    this.mesh.geometry.dispose();
-    this.mesh.material.dispose();
-  }
-}
-
 /* ============ 输入（本地键位） ============ */
 function playerForCode(code){
   for (let i = 0; i < players.length; i++){
@@ -1050,6 +1122,11 @@ function playerForCode(code){
 }
 window.addEventListener('keydown', e => {
   if (e.code === 'KeyM'){ toggleMute(); return; }
+  if (e.key === '1' || e.key === '2'){
+    selectedSlot = Number(e.key);
+    updateHotbar();
+    return;
+  }
   const p = playerForCode(e.code);
   if (!p) return;
   e.preventDefault();
@@ -1061,10 +1138,6 @@ window.addEventListener('keydown', e => {
     else if (e.code === p.keys.sword){
       if (netMode === 'guest') net.pendingInput.sword = true;
       swordAttack(p);
-    }
-    else if (e.code === p.keys.bow){
-      if (netMode === 'guest') net.pendingInput.bow = true;
-      bowShoot(p);
     }
     else if (e.code === p.keys.place){
       p.input.place = true;
@@ -1104,7 +1177,7 @@ function createRoom(){
   net = {
     mode: 'host', room,
     peer: null, conn: null,
-    guestInput: { ix: 0, iz: 0, jump: false, place: false, sword: false, bow: false },
+    guestInput: { ix: 0, iz: 0, jump: false, place: false, sword: false, yaw: 0, pitch: 0 },
     pendingInput: null,
     evtQueue: [], seq: 0,
     timers: { snap: 0, input: 0, ping: 0 },
@@ -1147,14 +1220,13 @@ function joinRoom(room){
     mode: 'guest', room,
     peer: null, conn: null,
     guestInput: null,
-    pendingInput: { jump: false, sword: false, bow: false },
+    pendingInput: { jump: false, sword: false },
     evtQueue: [], seq: 0,
     timers: { snap: 0, input: 0, ping: 0 },
     rtt: 0
   };
   netMode = 'guest';
   rebuildPlayers('guest');
-  arrowMap = new Map();
   setNetStatus('正在加入房间 ' + room + ' …');
   try {
     net.peer = new Peer('bridge-v2-' + room + '-guest', { debug: 0 });
@@ -1197,7 +1269,8 @@ function onData(raw){
     net.guestInput.place = !!m.place;
     if (m.jump) net.guestInput.jump = true;
     if (m.sword) net.guestInput.sword = true;
-    if (m.bow) net.guestInput.bow = true;
+    net.guestInput.yaw = m.yaw || 0;
+    net.guestInput.pitch = m.pitch || 0;
   }
   else if (m.t === 'start' && netMode === 'guest'){ beginCountdown(); }
   else if (m.t === 'snap' && netMode === 'guest'){ applySnap(m); }
@@ -1215,16 +1288,10 @@ function teardownNet(){
     try { if (net.peer) net.peer.destroy(); } catch (err) {}
   }
   net = null;
-  if (arrowMap){
-    for (const [, e] of arrowMap){
-      scene.remove(e.mesh);
-      e.mesh.geometry.dispose();
-      e.mesh.material.dispose();
-    }
-    arrowMap = null;
-  }
   if (netMode !== 'local') rebuildPlayers('local');
   netMode = 'local';
+  isFirstPerson = false;
+  hideFirstPersonUI();
 }
 
 /* ============ 玩家实体按模式重建 ============ */
@@ -1243,11 +1310,11 @@ function rebuildPlayers(mode){
   players.forEach(p => disposeRig(p));
   players.length = 0;
   if (mode === 'host'){
-    players.push(new Player('red', KEYS_RED, true));
+    players.push(new Player('red', FP_KEYS, true));
     players.push(new Player('blue', null, false));
   } else if (mode === 'guest'){
     players.push(new RemotePlayer('red'));
-    players.push(new Player('blue', KEYS_BLUE, true));
+    players.push(new Player('blue', FP_KEYS, true));
   } else {
     players.push(new Player('red', KEYS_RED, true));
     players.push(new Player('blue', KEYS_BLUE, true));
@@ -1255,7 +1322,7 @@ function rebuildPlayers(mode){
   players.forEach(drawHpBar);
 }
 
-/* ============ 访客端：快照应用 / 事件 / 视觉箭矢 ============ */
+/* ============ 访客端：快照应用 / 事件 ============ */
 function applySnap(s){
   if (netMode !== 'guest') return;
   const red = players[0], blue = players[1];
@@ -1266,12 +1333,15 @@ function applySnap(s){
   blue.blocks = s.blocks[1];
   blue.invulnT = s.invuln[1];
   const bpos = new THREE.Vector3(s.pos[1][0], s.pos[1][1], s.pos[1][2]);
-  if (blue.pos.distanceTo(bpos) > 1.5) blue.pos.copy(bpos);
+  if (!blue._snapTarget) blue._snapTarget = bpos.clone();
+  const bd = blue.pos.distanceTo(bpos);
+  if (bd > 3) blue.pos.copy(bpos);   // 大位移（复活/传送）直接跟随
+  else blue._snapTarget.copy(bpos);  // 常规位移：作为插值目标，由 update 平滑趋近
+  blue.anim.walk = s.anim[1][0];
   red.apply({
     hp: s.hp[0], score: s.score[0], blocks: s.blocks[0], alive: s.alive[0], invuln: s.invuln[0],
     pos: s.pos[0], face: s.face[0], anim: s.anim[0]
   });
-  syncArrows(s.arrows);
   for (let i = 0; i < s.evt.length; i++) handleNetEvt(s.evt[i]);
 }
 function handleNetEvt(e){
@@ -1290,41 +1360,6 @@ function handleNetEvt(e){
   else if (e.k === 'win'){ showWinOverlay(e.team); }
   else if (e.k === 'block'){ setBlock(e.x, e.y, e.z, e.type, true); }
 }
-function syncArrows(list){
-  const seen = new Set();
-  for (let i = 0; i < list.length; i++){
-    const a = list[i];
-    seen.add(a[0]);
-    let e = arrowMap.get(a[0]);
-    if (!e){
-      const mat = new THREE.MeshLambertMaterial({ color: a[1] === 'red' ? 0xe0353a : 0x2f74e0 });
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.7), mat);
-      scene.add(mesh);
-      e = { mesh, target: new THREE.Vector3(a[2], a[3], a[4]), vel: new THREE.Vector3(a[5], a[6], a[7]) };
-      arrowMap.set(a[0], e);
-    }
-    e.target.set(a[2], a[3], a[4]);
-    e.vel.set(a[5], a[6], a[7]);
-  }
-  for (const [id, e] of arrowMap){
-    if (!seen.has(id)){
-      scene.remove(e.mesh);
-      e.mesh.geometry.dispose();
-      e.mesh.material.dispose();
-      arrowMap.delete(id);
-    }
-  }
-}
-function updateArrows(dt){
-  if (!arrowMap) return;
-  for (const [, e] of arrowMap){
-    e.mesh.position.lerp(e.target, Math.min(1, dt * 14));
-    const dir = e.vel.clone().normalize();
-    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
-    e.mesh.quaternion.copy(q);
-  }
-}
-
 /* ============ 主机端：快照打包 / 输入发送 ============ */
 function buildSnapshot(){
   const r = players[0], b = players[1];
@@ -1335,8 +1370,7 @@ function buildSnapshot(){
     alive: [r.alive, b.alive], invuln: [r.invulnT, b.invulnT],
     pos: [[r.pos.x, r.pos.y, r.pos.z], [b.pos.x, b.pos.y, b.pos.z]],
     face: [[r.facing.x, r.facing.z], [b.facing.x, b.facing.z]],
-    anim: [[r.anim.walk, r.anim.swing, r.anim.draw], [b.anim.walk, b.anim.swing, b.anim.draw]],
-    arrows: arrows.filter(a => a.alive).map(a => [a.id, a.team, a.pos.x, a.pos.y, a.pos.z, a.vel.x, a.vel.y, a.vel.z]),
+    anim: [[r.anim.walk, r.anim.swing], [b.anim.walk, b.anim.swing]],
     evt
   };
 }
@@ -1350,11 +1384,11 @@ function sendInput(){
     place: blue.input.place,
     jump: net.pendingInput.jump,
     sword: net.pendingInput.sword,
-    bow: net.pendingInput.bow
+    yaw: blue.yaw,
+    pitch: blue.pitch
   });
   net.pendingInput.jump = false;
   net.pendingInput.sword = false;
-  net.pendingInput.bow = false;
 }
 function sendPing(){
   if (net && net.conn && net.conn.open) netSend({ t: 'ping', ts: performance.now() });
@@ -1430,17 +1464,10 @@ function clearFx(){
   damageTexts.length = 0;
 }
 function resetGame(){
-  arrows.forEach(a => a.remove());
-  arrows.length = 0;
-  if (arrowMap){
-    for (const [, e] of arrowMap){
-      scene.remove(e.mesh);
-      e.mesh.geometry.dispose();
-      e.mesh.material.dispose();
-    }
-    arrowMap = new Map();
-  }
   clearFx();
+  isFirstPerson = netMode !== 'local';
+  if (isFirstPerson) showFirstPersonUI();
+  else hideFirstPersonUI();
   document.getElementById('killfeed').innerHTML = '';
   buildWorld();
   players.forEach(p => {
@@ -1449,7 +1476,6 @@ function resetGame(){
     if (p instanceof RemotePlayer) p.reset();
     else {
       p.cd.sword = 0;
-      p.cd.bow = 0;
       p.cd.place = 0;
       p.lastHit = null;
       p.lastHitT = 0;
@@ -1460,9 +1486,10 @@ function resetGame(){
   state = 'playing';
 }
 function backToMenu(){
-  arrows.forEach(a => a.remove());
-  arrows.length = 0;
   clearFx();
+  isFirstPerson = false;
+  hideFirstPersonUI();
+  if (document.pointerLockElement === canvasEl && document.exitPointerLock) document.exitPointerLock();
   document.getElementById('killfeed').innerHTML = '';
   document.getElementById('winOverlay').classList.add('hidden');
   document.getElementById('cdOverlay').classList.add('hidden');
@@ -1472,7 +1499,6 @@ function backToMenu(){
     if (p instanceof RemotePlayer) p.reset();
     else {
       p.cd.sword = 0;
-      p.cd.bow = 0;
       p.cd.place = 0;
       p.lastHit = null;
       p.lastHitT = 0;
@@ -1485,6 +1511,18 @@ function backToMenu(){
   document.getElementById('roomInput').value = '';
   document.getElementById('netStatus').textContent = '创建房间会自动生成 6 位房间码；把邀请链接发给好友，对方打开即可自动匹配进房。';
   state = 'menu';
+}
+
+function showFirstPersonUI(){
+  document.getElementById('crosshair').style.display = 'block';
+  document.getElementById('hotbar').style.display = 'flex';
+  document.getElementById('controlsBar').style.display = 'none';
+  updateHotbar();
+}
+function hideFirstPersonUI(){
+  document.getElementById('crosshair').style.display = 'none';
+  document.getElementById('hotbar').style.display = 'none';
+  document.getElementById('controlsBar').style.display = '';
 }
 
 /* ============ 菜单按钮 ============ */
@@ -1587,7 +1625,6 @@ function step(dt){
     if (netMode === 'guest'){
       players[1].update(dt);
       players[0].update(dt);
-      updateArrows(dt);
       if (net){
         net.timers.input += dt * 1000;
         if (net.timers.input >= CFG.netRate){ net.timers.input = 0; sendInput(); }
@@ -1596,11 +1633,6 @@ function step(dt){
       }
     } else if (netMode === 'host'){
       players.forEach(p => p.update(dt));
-      for (let i = arrows.length - 1; i >= 0; i--){
-        const a = arrows[i];
-        a.update(dt);
-        if (!a.alive) arrows.splice(i, 1);
-      }
       if (net){
         net.timers.snap += dt * 1000;
         if (net.timers.snap >= CFG.netRate){ net.timers.snap = 0; netSend(buildSnapshot()); }
@@ -1609,11 +1641,6 @@ function step(dt){
       }
     } else {
       players.forEach(p => p.update(dt));
-      for (let i = arrows.length - 1; i >= 0; i--){
-        const a = arrows[i];
-        a.update(dt);
-        if (!a.alive) arrows.splice(i, 1);
-      }
     }
     updateHUD();
   }
